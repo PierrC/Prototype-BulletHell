@@ -21,7 +21,7 @@
 			var camera, scene, renderer;
 			var mesh;
 			var enemies = [];
-			var speed = 10;
+			var speed = 1;
 			var object;
 			var score;
 
@@ -173,8 +173,10 @@
 				requestAnimationFrame( animate );
 				var radius2 = 800;
 				score += 1;
+			//	document.write(score);
 				for(var i = 0; i < enemies.length; i ++){
 					enemies[i].position.y -= speed;
+					speed = speed * 1.00001;
 					if( enemies[i].position.y < -400){
 						enemies[i].position.y = 400;
 						enemies[i].position.x = window.innerWidth/2 - window.innerWidth*Math.random();
@@ -182,7 +184,6 @@
 					else{
 						if(enemies[i].position.distanceTo(object.position) < 20){
 							console.log("collision");
-							console.log(score);
 							score = 0;
 						}
 					}
