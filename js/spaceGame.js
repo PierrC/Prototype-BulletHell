@@ -25,6 +25,7 @@ var Sprite = function(image, posX, posY, speed, exi, type, token1, token2){
 	0 = background
 	1 = enemy1
 	2 = enemy2
+	3 = boss
 
 	10 = enemy2_bullets
 	11 = player
@@ -58,10 +59,31 @@ enemy2Image.src = "img/enemy2_spaceship1T.gif";
 var enemy2_bulletImage = new Image();
 enemy2_bulletImage.src = "img/enemy2_bullet3T.png";
 
+// bomb2 Image
+var bossImage = new Image();
+bossImage.src = "img/bossT.gif";
+
+////////////////////////////////////////////////////
+//                   AUDIO                        //
+////////////////////////////////////////////////////
+
+var audio = new Audio('track1.mp3');
+audio.loop = true;
+audio.play();
+var audio2 = new Audio('Shoot1.wav');
+audio2.volume = 0.3;
+var audio3 = new Audio('enemyShoot.wav');
+audio3.volume = 0.2;
+var audio4 = new Audio('explosion2.wav');
+audio4.volume = 0.2;
+var audio5 = new Audio('explosion1.wav');
+audio5.volume = 0.2;
+
 
 ////////////////////////////////////////////////////
 //               GAME OBJECTS                     //
 ////////////////////////////////////////////////////
+
 
 var State = 0;
 /*
@@ -69,7 +91,7 @@ var State = 0;
 	1: Game
 	2: Game Over
 */
-var timer = 0;
+var timer = 1;
 var score = 0;
 var highscore = 0;
 var bullets = [];
@@ -97,6 +119,10 @@ var enemy2Timer = 0;
 var shootX = 0;
 var shootY = 0;
 
+var timerBoss = 0;
+var bossIsHere = false;
+var bossCanShoot = false;
+
 ////////////////////////////////////////////////////
 //               GAME CONTROLS                    //
 ////////////////////////////////////////////////////
@@ -115,7 +141,6 @@ addEventListener("keyup", function (e) {
 
 // Reset the game when player dies
 var reset = function () {
-	console.log("The score is " + score);
 	player.posX = canvas.width / 2;
 	player.posY = canvas.height / 2;
 	shootX = player.posX + 2.0;
@@ -132,12 +157,14 @@ var reset = function () {
 	if(score > highscore){
 		highscore = score;
 	}
-	timer = 0;
+	timer = 1;
 	score = 0;
 	enemy1SpawnDelay = 100;
 	enemy2SpawnDelay = 1000;
 	enemy1Timer = 0;
 	State = 0;
+	timerBoss = 0;
+	bossIsHere = false;
 };
 
 // Update game objects
@@ -148,8 +175,9 @@ var update = function (modifier) {
 			shoot();
 			canShoot = false;
 			activationTime = Date.now();
+			audio2.play();
 		}
-		if(currentTime >= activationTime+200){
+		if(currentTime >= activationTime+400){
 			canShoot = true;
 		}
 	}
@@ -177,6 +205,16 @@ var update = function (modifier) {
             player.posX= 426;
         } 
 	}
+	if (keysDown[77] == true) { // Player holding right
+		audio.muted = true;
+		audio2.muted = true;
+		audio3.muted = true;
+	}
+	if (keysDown[78] == true) { // Player holding right
+		audio.muted = false;
+		audio2.muted = false;
+		audio3.muted = false;
+	}
 	
 	// basic enemy 
 	for(var i = 0; i < enemies.length; i ++){
@@ -185,9 +223,24 @@ var update = function (modifier) {
 				if(bullets[j].exi == true){
 					distanceBX = Math.abs(enemies[i].posX - bullets[j].posX);
 					distanceBY = Math.abs(enemies[i].posY - bullets[j].posY);		
-					if(  distanceBX < 16 && distanceBY < 10){
+					
+					if(enemies[i].type == 3 && distanceBY < 80){
+						enemies[i].token2 -= 1;
+						bullets[j].exi = false;
+						if(enemies[i].token2 <= 0){
+							enemies[i].exi = false;
+							bossIsHere = false;
+							bossCanShoot = false;
+							score += 10000;
+							enemy1SpawnDelay -= 10;
+							enemy2SpawnDelay -= 5;
+						}
+					}
+					
+					else if(  distanceBX < 16 && distanceBY < 10){
 						enemies[i].exi = false;
 						bullets[j].exi = false;
+						audio4.play();
 						score += 100;
 					}
 				}
@@ -213,12 +266,21 @@ var update = function (modifier) {
 		if(enemies[i].type == 2 && distanceX <= 1 && enemies[i].token1 <= 0){
 			 enemy2Shoot(enemies[i].posX, enemies[i].posY);
 			 enemies[i].token1 = 100;
+			 audio3.play();
+		}
+		else if(enemies[i].type == 3 && enemies[i].token1 <= 0 && bossCanShoot == true){
+			audio3.play();
+				for(var h = 0; h < 8; h++){
+					bossShoot();
+				}
+				enemies[i].token1 = 100;
+			
 		}
 		enemies[i].token1 -= 1;
 		if(enemies[i].exi == true){
 		// Due to reset put this last	
 			if(  distanceX < 20 && distanceY < 16){
-				console.log(score);
+				audio5.play();
 				reset();
 			}
 		}
@@ -227,11 +289,20 @@ var update = function (modifier) {
 		distanceX = Math.abs(enemyBullets[i].posX - player.posX);
 		distanceY = Math.abs(enemyBullets[i].posY - player.posY);
 		if(  distanceX < 12 && distanceY < 12){
-				console.log(score);
+				audio5.play();
 				reset();
 			}
 	}
-
+	if((timer % 6000 == 0) && bossIsHere == false){
+		bossIsHere = true;
+		for(var i = 0; i < enemies.length ; i++){
+			if(enemies[i].type == 2){
+				enemies.slice(i, 1);
+				i--;
+			}
+		}
+		bossSpawn();
+	}
 	enemy1Timer += 5;
 	if(enemy1Timer >= enemy1SpawnDelay ){
 		enemy1Timer = 0;
@@ -239,37 +310,38 @@ var update = function (modifier) {
 
 	}
 	enemy2Timer += 5;
-	if(enemy2Timer >= enemy2SpawnDelay ){
+	if(enemy2Timer >= enemy2SpawnDelay && bossIsHere == false){
 		enemy2Timer = 0;
 		enemy2Spawn();
 	}
 	scoreEl.innerHTML = score;
 };
 
-
 // object spawning
-
 var shoot = function(){
 	shootX = player.posX + 2.0;
 	shootY = player.posY-16.0;
 	bullet = new Sprite(bulletImage, shootX, shootY, 200, true, 12);
 	bullets.push(bullet);
 }
-
 var enemy2Shoot = function(x, y){
 	shootXEnemy = x + 2.0;
 	shootYEnemy = y+16.0;
 	bulletEnemy = new Sprite(enemy2_bulletImage, shootXEnemy, shootYEnemy, 200, true, 10, 0, 0);
 	enemyBullets.push(bulletEnemy);
 }
-
+var bossShoot = function(){
+	shootXboss = Math.random() * 426;
+	shootYboss = 0;
+	bulletEnemy = new Sprite(enemy2_bulletImage, shootXboss, shootYboss, 200, true, 10, 0, 0);
+	enemyBullets.push(bulletEnemy);
+}
 var enemy1Spawn = function(){
 	enemy1_positionX = Math.random() * (426 - 0 ) + 0; //Math.random() * (max - min) + min;
 	enemy1_positionY = Math.random() * (-30 +100 ) - 100; //Math.random() * (max - min) + min;
 	var enemy1 = new Sprite(enemy1Image, enemy1_positionX, enemy1_positionY, 200, true, 1, 0, 0);
 	enemies.push(enemy1);	
 }
-
 var enemy2Spawn = function(){
 	var sideDecider = Math.round(Math.random());
 	var enemy2_positionX = 0; //Math.random() * (max - min) + min;
@@ -279,9 +351,11 @@ var enemy2Spawn = function(){
 	var enemy2 = new Sprite(enemy2Image, enemy2_positionX, enemy2_positionY, 100, true, 2, 0, 0);
 	enemies.push(enemy2);	
 }
-
+var bossSpawn = function(){
+	var boss = new Sprite(bossImage, -10, -100, 100, true, 3, 100, 100);
+	enemies.push(boss);
+}
 // drawing game objects
-
 var render = function () {
     if (background.exi){
         ctx.drawImage(background.image, 0, 0);
@@ -289,7 +363,6 @@ var render = function () {
     if (player.exi){
         ctx.drawImage( player.image ,player.posX, player.posY);
     }
-	
 	for(var i = 0; i < bullets.length; i++){
 		if (bullets[i].exi == true){
 			bullets[i].posY -= 6;
@@ -301,7 +374,6 @@ var render = function () {
 			}
 		}
 	}
-
 	for(var i = 0; i < enemyBullets.length; i++){
 		if(enemyBullets[i].type == 10){
 			enemyBullets[i].posY += 6;
@@ -313,7 +385,6 @@ var render = function () {
 			}
 		}
 	}
-
 	for(var i = 0; i < enemies.length; i++){
 		if(enemies[i].type == 1){
 			if(enemies[i].posY >= 650){
@@ -334,15 +405,27 @@ var render = function () {
 			enemies[i].posX += 0.01 * enemies[i].speed
 			if(enemies[i].posX <= 0 && enemies[i].speed < 0){ 
 				enemies[i].speed = enemies[i].speed*(-1);
+				enemies[i].posY += 10
 			}
 			else if(enemies[i].posX >= 426 && enemies[i].speed > 0){
 				enemies[i].speed = enemies[i].speed*(-1);
 			}	
 		}
+		else if(enemies[i].type == 3){
+			
+			if(enemies[i].exi == true){
+				ctx.drawImage(enemies[i].image, enemies[i].posX, enemies[i].posY);
+			}
+			if(enemies[i].posY <= 0){
+				enemies[i].posY += 1;
+			}
+			else if(enemies[i].posY > 0){
+				bossCanShoot = true;
+			}
+		}
 	}	
 
 };
-
 // The main game loop
 var main = function () {
 	if( State == 0){
@@ -356,18 +439,17 @@ var main = function () {
 	if(timer % 100 == 0 && enemy1SpawnDelay > 50){
 		enemy1SpawnDelay = enemy1SpawnDelay * 0.98;
 	}
-	if(timer % 200 == 0 && enemy1SpawnDelay > 250){
-		enemy1SpawnDelay = enemy1SpawnDelay * 0.90;
+	if(timer % 200 == 0 && enemy2SpawnDelay > 500){
+		enemy2SpawnDelay = enemy2SpawnDelay * 0.95;
 	}	
 
 	render();
 	then = now;
 	timer += 1;
-	
+
 	requestAnimationFrame(main);
 	}
 };
-
 ////////////////////////////////////////////////////////////////////////////////
 /////                          /\ /\  |_ |\ | |  |                         /////
 /////                         /     \ |_ | \| |__|                         /////
@@ -385,16 +467,18 @@ var menuRender = function(){
 	if (keysDown[13] == true) { // Player holding down
 		State = 1;
 	};
-	
+	if (keysDown[77] == true) { // Player holding right
+		audio.muted = true;
+		audio2.muted = true;
+		audio3.muted = true;
+	}
+	if (keysDown[78] == true) { // Player holding right
+		audio.muted = false;
+		audio2.muted = false;
+		audio3.muted = false;
+	}
 	requestAnimationFrame(main);
 }
-
-
-
-
-
-
-
 
 
 // Cross-browser support for requestAnimationFrame
@@ -405,7 +489,3 @@ requestAnimationFrame = w.requestAnimationFrame || w.webkitRequestAnimationFrame
 var then = Date.now();
 reset();
 main();
-
-
-
-
