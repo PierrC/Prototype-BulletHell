@@ -67,16 +67,16 @@ bossImage.src = "img/bossT.gif";
 //                   AUDIO                        //
 ////////////////////////////////////////////////////
 
-var audio = new Audio('track1.mp3');
+var audio = new Audio('sound/track1.mp3');
 audio.loop = true;
 audio.play();
-var audio2 = new Audio('Shoot1.wav');
+var audio2 = new Audio('sound/Shoot1.wav');
 audio2.volume = 0.3;
-var audio3 = new Audio('enemyShoot.wav');
+var audio3 = new Audio('sound/enemyShoot.wav');
 audio3.volume = 0.2;
-var audio4 = new Audio('explosion2.wav');
+var audio4 = new Audio('sound/explosion2.wav');
 audio4.volume = 0.2;
-var audio5 = new Audio('explosion1.wav');
+var audio5 = new Audio('sound/explosion1.wav');
 audio5.volume = 0.2;
 
 
