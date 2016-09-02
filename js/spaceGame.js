@@ -59,7 +59,7 @@ enemy2Image.src = "img/enemy2_spaceship1T.gif";
 var enemy2_bulletImage = new Image();
 enemy2_bulletImage.src = "img/enemy2_bullet3T.png";
 
-// bomb2 Image
+// boss Image
 var bossImage = new Image();
 bossImage.src = "img/bossT.gif";
 
@@ -67,19 +67,27 @@ bossImage.src = "img/bossT.gif";
 //                   AUDIO                        //
 ////////////////////////////////////////////////////
 
+
+// Allan Haapalainen - A journey Through Space
+// https://www.youtube.com/watch?v=9fKadz4HlSk
 var audio = new Audio('sound/track1.mp3');
 audio.loop = true;
 audio.play();
-var audio2 = new Audio('sound/Shoot1.wav');
-audio2.volume = 0.3;
+var audio2_1 = new Audio('sound/Shoot1.wav');
+audio2_1.volume = 0.3;
+var audio2_2 = new Audio('sound/Shoot1.wav');
+audio2_2.volume = 0.3;
 var audio3 = new Audio('sound/enemyShoot.wav');
 audio3.volume = 0.2;
-var audio4 = new Audio('sound/explosion2.wav');
-audio4.volume = 0.2;
+var audio4_1 = new Audio('sound/explosion2.wav');
+audio4_1.volume = 0.2;
+var audio4_2 = new Audio('sound/explosion2.wav');
+audio4_2.volume = 0.2;
 var audio5 = new Audio('sound/explosion1.wav');
 audio5.volume = 0.2;
 
-
+var AudioC1 = 0;
+var AudioC2 = 0;
 ////////////////////////////////////////////////////
 //               GAME OBJECTS                     //
 ////////////////////////////////////////////////////
@@ -175,9 +183,18 @@ var update = function (modifier) {
 			shoot();
 			canShoot = false;
 			activationTime = Date.now();
-			audio2.play();
+			
+			if(AudioC1 == 0){
+				audio2_1.play();
+				AudioC1++;
+			}
+			else{
+				audio2_2.play();
+				AudioC1--;
+			}
+
 		}
-		if(currentTime >= activationTime+400){
+		if(currentTime >= activationTime+250){
 			canShoot = true;
 		}
 	}
@@ -207,13 +224,21 @@ var update = function (modifier) {
 	}
 	if (keysDown[77] == true) { // Player holding right
 		audio.muted = true;
-		audio2.muted = true;
+		audio2_1.muted = true;
+		audio2_2.muted = true;
 		audio3.muted = true;
+		audio4_1.muted = true;
+		audio4_2.muted = true;
+		audio5.muted = true;
 	}
 	if (keysDown[78] == true) { // Player holding right
 		audio.muted = false;
-		audio2.muted = false;
+		audio2_1.muted = false;
+		audio2_2.muted = false;
 		audio3.muted = false;
+		audio4_1.muted = false;
+		audio4_2.muted = false;
+		audio5.muted = false;
 	}
 	
 	// basic enemy 
@@ -235,12 +260,20 @@ var update = function (modifier) {
 							enemy1SpawnDelay -= 10;
 							enemy2SpawnDelay -= 5;
 						}
-					}
-					
+					} 
 					else if(  distanceBX < 16 && distanceBY < 10){
 						enemies[i].exi = false;
 						bullets[j].exi = false;
-						audio4.play();
+						// audio4_1.play();
+						
+						if(AudioC2 == 0){
+							audio4_1.play();
+							AudioC2++;
+						}
+						else{
+							audio4_2.play();
+							AudioC2--;
+						}
 						score += 100;
 					}
 				}
@@ -294,13 +327,15 @@ var update = function (modifier) {
 			}
 	}
 	if((timer % 6000 == 0) && bossIsHere == false){
+			console.log("boss")
 		bossIsHere = true;
+		
 		for(var i = 0; i < enemies.length ; i++){
 			if(enemies[i].type == 2){
-				enemies.slice(i, 1);
-				i--;
+				enemies[i].exi = false;
 			}
 		}
+		
 		bossSpawn();
 	}
 	enemy1Timer += 5;
@@ -336,6 +371,7 @@ var bossShoot = function(){
 	bulletEnemy = new Sprite(enemy2_bulletImage, shootXboss, shootYboss, 200, true, 10, 0, 0);
 	enemyBullets.push(bulletEnemy);
 }
+
 var enemy1Spawn = function(){
 	enemy1_positionX = Math.random() * (426 - 0 ) + 0; //Math.random() * (max - min) + min;
 	enemy1_positionY = Math.random() * (-30 +100 ) - 100; //Math.random() * (max - min) + min;
@@ -343,8 +379,8 @@ var enemy1Spawn = function(){
 	enemies.push(enemy1);	
 }
 var enemy2Spawn = function(){
-	var sideDecider = Math.round(Math.random());
-	var enemy2_positionX = 0; //Math.random() * (max - min) + min;
+	var sideDecider = Math.round(Math.random()); // allows enemy to be spawned on both sides of the screen
+	var enemy2_positionX = 0;
 	if(sideDecider == 0){ enemy2_positionX = -20; }
 	else{ enemy2_positionX = 460; }
 	enemy2_positionY = Math.random() * (100 - 30 ) + 30; //Math.random() * (max - min) + min;
@@ -353,8 +389,10 @@ var enemy2Spawn = function(){
 }
 var bossSpawn = function(){
 	var boss = new Sprite(bossImage, -10, -100, 100, true, 3, 100, 100);
+	console.log("boss")
 	enemies.push(boss);
 }
+
 // drawing game objects
 var render = function () {
     if (background.exi){
@@ -450,6 +488,7 @@ var main = function () {
 	requestAnimationFrame(main);
 	}
 };
+
 ////////////////////////////////////////////////////////////////////////////////
 /////                          /\ /\  |_ |\ | |  |                         /////
 /////                         /     \ |_ | \| |__|                         /////
@@ -467,15 +506,23 @@ var menuRender = function(){
 	if (keysDown[13] == true) { // Player holding down
 		State = 1;
 	};
-	if (keysDown[77] == true) { // Player holding right
+	if (keysDown[77] == true) { // Player holding m
 		audio.muted = true;
-		audio2.muted = true;
+		audio2_1.muted = true;
+		audio2_2.muted = true;
 		audio3.muted = true;
+		audio4_1.muted = true;
+		audio4_2.muted = true;
+		audio5.muted = true;
 	}
-	if (keysDown[78] == true) { // Player holding right
+	if (keysDown[78] == true) { // Player holding n
 		audio.muted = false;
-		audio2.muted = false;
+		audio2_1.muted = false;
+		audio2_2.muted = false;
 		audio3.muted = false;
+		audio4_1.muted = false;
+		audio4_2.muted = false;
+		audio5.muted = false;
 	}
 	requestAnimationFrame(main);
 }
